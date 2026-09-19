@@ -136,6 +136,12 @@ registers it with Ollama from that path.
   collides with `2240:22`.
 - **"Permission denied (publickey)"**: the host `authorized_keys` is missing
   or empty. Fix it and `docker compose restart dev`.
+- **`Permission denied` writing into `apps/api` or `apps/web`**: those
+  directories must exist in the checkout. Docker creates a missing bind-mount
+  parent (for the `node_modules` volumes inside them) as a root-owned 755
+  directory that `dev` cannot write into, while a directory that came from the
+  host is world-writable. That is what the `.gitkeep` files are for — recreate
+  the directory from Windows and `docker compose up -d dev` again.
 - **Every file shows as modified, `git diff --stat` is empty**: the other side
   of the bind mount touched the index. `git checkout -- <files>`. Not
   `git update-index -- <path>`, which stages it.

@@ -1,0 +1,4 @@
+# Placeholder: this directory must exist in a checkout.
+# Docker creates missing bind-mount parents as root-owned 755 dirs that the
+# dev user cannot write into; a directory that comes from the checkout is
+# writable. Delete once the app scaffold lives here.
