@@ -1,0 +1,19 @@
+# One line ending everywhere. The Windows host checks out with
+# core.autocrlf=true, but Prettier/ESLint and the container's tools all expect
+# LF, so the working tree is LF on both sides and these rules win over
+# autocrlf. Without this, a formatter rewrites every file each time the other
+# side touches it.
+* text=auto eol=lf
+
+# Scripts and container config break outright with CRLF.
+.devcontainer/** text eol=lf
+*.sh text eol=lf
+
+# SIE4 files are CP437-encoded and must never be line-ending converted.
+*.se binary
+*.si binary
+*.sie binary
+
+# Model weights and lockfiles: don't diff them.
+*.gguf binary
+pnpm-lock.yaml -diff linguist-generated

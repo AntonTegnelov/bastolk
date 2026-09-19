@@ -1,0 +1,36 @@
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Python (the trainer runs from /home/dev/.venv inside the container)
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Real bookkeeping data, generated datasets and model weights never go to a
+# public repository. Tests use the small synthetic SIE file under apps/api.
+data/
+*.gguf
+
+# Background notes: the interview context behind the project stays local
+# (the repository is public). See notes/background.md.
+notes/
+
+# AI assistant configuration stays out of the public tracker (CLAUDE.md and
+# docs/agent-log.md are deliberately tracked: they are part of the project).
+.claude/
+.cursor/
+.aider*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp

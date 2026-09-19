@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "bastolk",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "dev",
+  "runServices": ["dev", "postgres", "redis", "ollama"],
+  "workspaceFolder": "/workspaces/bastolk",
+  "remoteUser": "dev",
+
+  // Keep the sshd entrypoint running so SSH access works while VS Code is
+  // attached via the Dev Containers extension.
+  "overrideCommand": false,
+
+  // NOTE: no "forwardPorts" / "appPort" here. Zed's dev container support
+  // translates them into extra docker-published host ports, which collide
+  // with the compose file's 2240:22 mapping and make the container fail to
+  // start. The API (3000), Vite (5173), Postgres, Redis and Ollama are
+  // published by the compose file itself.
+
+  // Workspace deps into the node_modules volumes. No-op before the pnpm
+  // workspace exists.
+  "postCreateCommand": "if [ -f package.json ]; then pnpm install; else echo 'no package.json yet - skipping pnpm install'; fi",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        // The repo's .venv, if any, is the Windows one; force the container's.
+        "python.defaultInterpreterPath": "/home/dev/.venv/bin/python"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma",
+        "ms-python.python",
+        "anthropic.claude-code"
+      ]
+    }
+  }
+}

@@ -1,0 +1,153 @@
+# Bastolk compose project: the data services (PostgreSQL with pgvector, Redis),
+# the Ollama model server, and the SSH-reachable dev container, all in one
+# project so they share a network and come up together.
+#
+# Daily development:  docker compose up -d dev   (pulls in postgres/redis/ollama)
+# Services only:      docker compose up -d postgres redis ollama
+#
+# The dev container follows the house pattern in
+# E:\Programmering\Code\DEVCONTAINER_TEMPLATE.md — see .devcontainer/README.md.
+
+name: bastolk
+
+services:
+  postgres:
+    # pgvector's own image: postgres 17 with the vector extension preinstalled.
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bastolk
+      POSTGRES_PASSWORD: bastolk
+      POSTGRES_DB: bastolk
+    ports:
+      # 5432 on the host is Athenus'. 5442 -> 5432 for host-side psql/GUI tools.
+      - "5442:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bastolk"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      # 6379 on the host is Athenus'.
+      - "6382:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    # Serves the fine-tuned GGUF over HTTP. Its own container so the model
+    # server can be restarted (or hold the GPU alone) without touching the
+    # dev box, and so the 8 GB card has exactly one serving process on it.
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    # CUDA through Docker's standard GPU support (Docker Desktop WSL2 backend).
+    # No privileged mode, no extra capabilities, no host drives: the container
+    # boundary is unchanged, the only new ability is running work on the GPU.
+    gpus: all
+    ports:
+      # 11435 -> 11434 so a native Windows Ollama on the default port can
+      # coexist. Inside the compose network it is http://ollama:11434.
+      - "11435:11434"
+    environment:
+      # Keep the 8 GB card free between requests: the training job needs all
+      # of it, and the API is expected to fall back to kNN while it trains.
+      OLLAMA_KEEP_ALIVE: "5m"
+      OLLAMA_MODELS: /root/.ollama/models
+    volumes:
+      # Pulled base models and registered fine-tunes.
+      - ollama_data:/root/.ollama
+      # Handoff directory shared with the dev container: the trainer writes
+      # <version>.gguf here, the worker registers it from the same path.
+      - models:/models
+    healthcheck:
+      test: ["CMD-SHELL", "ollama --version >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Dev container (SSH box) ────────────────────────────────────────────────
+  dev:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    image: bastolk-dev:latest
+    container_name: bastolk
+    hostname: bastolk
+    ports:
+      # Host 2240 -> container sshd :22. Port allocation lives in
+      # E:\Programmering\Code\DEVCONTAINER_TEMPLATE.md — claim there first.
+      - "2240:22"
+      # NestJS API and the Vite dev server, published so a Windows browser
+      # reaches them. Both must bind 0.0.0.0 inside the container.
+      - "3000:3000"
+      - "5173:5173"
+    # QLoRA training runs in this container, so it needs the card too. Only
+    # one of {trainer, ollama} may hold the GPU at a time — 8 GB does not fit
+    # both; the training job unloads the served model first (see docs).
+    gpus: all
+    depends_on:
+      - postgres
+      - redis
+      - ollama
+    environment:
+      # Reachable from ssh sessions via /etc/environment as well (see
+      # Dockerfile); these cover `docker exec` and the VS Code flow.
+      DATABASE_URL: postgresql://bastolk:bastolk@postgres:5432/bastolk
+      REDIS_URL: redis://redis:6379
+      OLLAMA_BASE_URL: http://ollama:11434
+      MODELS_DIR: /models
+    volumes:
+      # Repo root (includes any gitignored .env and data/ via the mount,
+      # never the image).
+      - .:/workspaces/bastolk:cached
+      # Host pubkeys installed by the entrypoint at startup — edit
+      # %USERPROFILE%\.ssh\authorized_keys and restart, no rebuild needed.
+      - ${USERPROFILE}/.ssh/authorized_keys:/tmp/host_authorized_keys:ro
+      # Persist Claude Code OAuth credentials across rebuilds.
+      - claude-config:/home/dev/.claude
+      # Stable sshd host-key fingerprint across down/up cycles.
+      - ssh-host-keys:/etc/ssh/keys
+      # PAT credential store (and any other ~/.ssh state) survives recreates.
+      - ssh-config:/home/dev/.ssh
+      # node_modules on volumes: pnpm's symlink store does not belong on a
+      # Windows bind mount, and these survive the recreate that Zed's dev
+      # container flow does on first attach.
+      - node-modules-root:/workspaces/bastolk/node_modules
+      - node-modules-api:/workspaces/bastolk/apps/api/node_modules
+      - node-modules-web:/workspaces/bastolk/apps/web/node_modules
+      - pnpm-store:/home/dev/.local/share/pnpm-store
+      # Python env for the trainer, outside the bind mount (the repo's own
+      # .venv, if any, is the Windows one) and on a volume so multi-GB torch
+      # wheels survive recreates.
+      - venv:/home/dev/.venv
+      # pip/HuggingFace/transformers.js caches: base model downloads live here.
+      - home-cache:/home/dev/.cache
+      # GGUF handoff to the Ollama container (same path on both sides).
+      - models:/models
+    restart: unless-stopped
+    init: true
+
+volumes:
+  postgres_data:
+  redis_data:
+  ollama_data:
+  models:
+  claude-config:
+  ssh-host-keys:
+  ssh-config:
+  node-modules-root:
+  node-modules-api:
+  node-modules-web:
+  pnpm-store:
+  venv:
+  home-cache:
