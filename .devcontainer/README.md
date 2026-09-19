@@ -150,8 +150,22 @@ registers it with Ollama from that path.
   restart Docker Desktop, and check that `gpus: all` is still on the service.
 - **Ollama says no GPU**: `docker compose logs ollama`. It falls back to CPU
   silently, which looks like "the model is very slow" rather than an error.
+- **Out of system RAM while merging or converting a model**: the container
+  gets whatever WSL2 gets, which defaults to half the host's 16 GB (`free -g`
+  showed 7 GB). If a merge or GGUF conversion is killed, add a
+  `%USERPROFILE%\.wslconfig` with `memory=11GB` and `wsl --shutdown` — that
+  stops every container, so do it between work sessions, not mid-run.
 - **Out of VRAM during training**: something is still loaded in Ollama.
   `curl $OLLAMA_BASE_URL/api/generate -d '{"model":"<name>","keep_alive":0}'`.
+
+## Where the bytes go
+
+`E:` has ~18 GB free, so nothing large may land in the checkout. It does not
+have to: `node_modules`, the pnpm store, `/home/dev/.venv` (torch alone is
+~5 GB), the caches, `/models` and the Ollama blobs are all named volumes,
+which live in Docker Desktop's VM disk on `C:`. Keep datasets and model files
+under `/models` or `data/` (gitignored), and check `df -h .` before blaming a
+tool for a mysterious I/O error.
 
 ## Do not rebuild casually
 
