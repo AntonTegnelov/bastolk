@@ -88,6 +88,23 @@ describe('buildDataset', () => {
     expect(all.map((e) => e.text)).toEqual(['UNIK TEXT']);
   });
 
+  // Real statements carry these, but every one has a different label, so as
+  // training examples they teach the model to guess rather than to read.
+  it('drops a text that is only a reference number', () => {
+    const dataset = buildDataset([
+      {
+        account: '6570',
+        vat: 'NONE',
+        texts: ['732-6853', '  445-1928 ', 'Bankavgifter'],
+      },
+    ]);
+
+    expect(dataset.stats.unlearnableDropped).toBe(2);
+    expect(
+      [...dataset.train, ...dataset.validation].map((e) => e.text),
+    ).toEqual(['Bankavgifter']);
+  });
+
   it('refuses a pair whose VAT treatment is not one we know', () => {
     expect(() =>
       buildDataset([{ account: '5420', vat: 'DOMESTIC_99', texts: ['X'] }]),

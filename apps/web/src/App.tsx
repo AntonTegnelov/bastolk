@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useCompanies, useCreateCompany, useHealth } from './hooks.js';
 import { ImportPage } from './pages/ImportPage.js';
+import { ModelsPage } from './pages/ModelsPage.js';
 import { ReviewPage } from './pages/ReviewPage.js';
 
-type Tab = 'review' | 'import';
+type Tab = 'review' | 'import' | 'models';
 
 const STORED_COMPANY = 'bastolk.companyId';
 
@@ -158,8 +159,10 @@ export default function App() {
           <p className="muted">Pick a company, or add one, to begin.</p>
         ) : tab === 'review' ? (
           <ReviewPage companyId={companyId} />
-        ) : (
+        ) : tab === 'import' ? (
           <ImportPage companyId={companyId} />
+        ) : (
+          <ModelsPage companyId={companyId} />
         )}
       </main>
     </div>

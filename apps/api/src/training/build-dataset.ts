@@ -21,6 +21,10 @@ export interface DatasetStats {
   /// than assigned to one, because a training set that contradicts itself
   /// teaches the model that the label is arbitrary.
   readonly ambiguousDropped: number;
+  /// Texts with no learnable content, such as a bare reference number. Real
+  /// statements contain them, but as training examples they teach guessing:
+  /// the same shape carries a different label every time.
+  readonly unlearnableDropped: number;
   readonly labels: number;
   readonly perLabel: Readonly<Record<string, number>>;
 }
@@ -53,6 +57,9 @@ const AMOUNT_RANGES: Record<string, readonly [number, number]> = {
 };
 
 const DEFAULT_RANGE: readonly [number, number] = [5_000, 500_000];
+
+/// Digits, spaces and dashes only: a reference number with no vendor in it.
+const UNLEARNABLE = /^[\d\s-]+$/;
 
 /// Money comes in only for a revenue account; everything else is a payment.
 const INCOMING_ACCOUNTS = new Set(['3011']);
@@ -127,6 +134,7 @@ export function buildDataset(
   const taken = new Set<string>();
   let duplicatesDropped = 0;
   let ambiguousDropped = 0;
+  let unlearnableDropped = 0;
 
   for (const pair of pairs) {
     const vat = pair.vat as VatTreatment;
@@ -136,6 +144,10 @@ export function buildDataset(
       const text = raw.trim();
       const key = text.toUpperCase();
       if (key === '') {
+        continue;
+      }
+      if (UNLEARNABLE.test(text)) {
+        unlearnableDropped += 1;
         continue;
       }
       if (ambiguous.has(key)) {
@@ -185,6 +197,7 @@ export function buildDataset(
       rawTexts,
       duplicatesDropped,
       ambiguousDropped,
+      unlearnableDropped,
       labels: byLabel.size,
       perLabel,
     },

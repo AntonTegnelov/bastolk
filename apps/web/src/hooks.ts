@@ -3,8 +3,11 @@ import { api } from './api/client.js';
 import type {
   Account,
   Company,
+  EvaluationMetrics,
   Health,
   LedgerSummary,
+  ModelVersion,
+  PromotionVerdict,
   SuggestionView,
   VatTreatment,
 } from './api/types.js';
@@ -117,5 +120,44 @@ export function useDecide(companyId: string | null) {
         },
       }),
     onSuccess: () => invalidateReview(queryClient, companyId),
+  });
+}
+
+export function useModels(companyId: string | null) {
+  return useQuery({
+    queryKey: ['models'],
+    queryFn: () => api<ModelVersion[]>('/models', { companyId }),
+    enabled: companyId !== null,
+  });
+}
+
+/// The baseline is reported in every comparison: a fine-tuned model without
+/// one beside it is not a result.
+export function useEvaluate(companyId: string | null) {
+  return useMutation({
+    mutationFn: (predictor: 'knn' | 'active') =>
+      api<EvaluationMetrics>(`/models/evaluate?predictor=${predictor}`, {
+        method: 'POST',
+        companyId,
+      }),
+  });
+}
+
+export function usePromote(companyId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ version: ModelVersion; verdict: PromotionVerdict }>(
+        `/models/${id}/promote`,
+        {
+          method: 'POST',
+          companyId,
+        },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['models'] });
+      void queryClient.invalidateQueries({ queryKey: ['health'] });
+    },
   });
 }

@@ -72,3 +72,30 @@ export interface Health {
 }
 
 export type ApiPaths = paths;
+
+export interface EvaluationMetrics {
+  examples: number;
+  accountAccuracy: number;
+  vatAccuracy: number;
+  bothAccuracy: number;
+  testFrom: string;
+  testTo: string;
+  predictor: string;
+  syntheticAccuracy: number | null;
+}
+
+export interface ModelVersion {
+  id: string;
+  name: string;
+  baseModel: string;
+  datasetSize: number;
+  status: 'TRAINING' | 'READY' | 'ACTIVE' | 'REJECTED' | 'FAILED';
+  filePath: string | null;
+  metrics: EvaluationMetrics | null;
+  createdAt: string;
+}
+
+export interface PromotionVerdict {
+  promote: boolean;
+  reason: string;
+}
