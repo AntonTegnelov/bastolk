@@ -64,7 +64,14 @@ function tryBuild(
   amountOre: number,
 ): { lines: JournalLineDraft[]; error: null } | { lines: []; error: string } {
   try {
-    return { lines: buildJournalLines({ counterAccountNumber: accountNumber, vatTreatment, amountOre }), error: null };
+    return {
+      lines: buildJournalLines({
+        counterAccountNumber: accountNumber,
+        vatTreatment,
+        amountOre,
+      }),
+      error: null,
+    };
   } catch (error) {
     // A rule refusal is an answer to the question asked. Anything else is a
     // bug and is allowed to propagate.
@@ -117,8 +124,11 @@ export class SuggestionsService {
       // dropped before it is stored rather than breaking the review screen.
       const buildable = prediction.candidates.filter(
         (candidate) =>
-          tryBuild(candidate.accountNumber, candidate.vatTreatment, transaction.amountOre)
-            .error === null,
+          tryBuild(
+            candidate.accountNumber,
+            candidate.vatTreatment,
+            transaction.amountOre,
+          ).error === null,
       );
 
       if (buildable.length === 0) {

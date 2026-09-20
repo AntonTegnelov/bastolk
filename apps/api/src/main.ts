@@ -22,7 +22,11 @@ async function bootstrap(): Promise<void> {
   );
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  SwaggerModule.setup('api', app, SwaggerModule.createDocument(app, swaggerConfig()));
+  SwaggerModule.setup(
+    'api',
+    app,
+    SwaggerModule.createDocument(app, swaggerConfig()),
+  );
 
   // The Vite dev server is a separate origin during development.
   app.enableCors();

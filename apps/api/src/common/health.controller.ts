@@ -30,7 +30,9 @@ export class HealthController {
     const [database, modelServer, active] = await Promise.all([
       this.pingDatabase(),
       this.pingOllama(),
-      this.prisma.modelVersion.findFirst({ where: { status: ModelStatus.ACTIVE } }),
+      this.prisma.modelVersion.findFirst({
+        where: { status: ModelStatus.ACTIVE },
+      }),
     ]);
 
     return {

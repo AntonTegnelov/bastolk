@@ -21,9 +21,7 @@
           }
         },
         "summary": "Readiness of the database and the model server",
-        "tags": [
-          "health"
-        ]
+        "tags": ["health"]
       }
     },
     "/companies": {
@@ -46,9 +44,7 @@
           }
         },
         "summary": "Every company in this installation",
-        "tags": [
-          "companies"
-        ]
+        "tags": ["companies"]
       },
       "post": {
         "operationId": "CompaniesController_create",
@@ -79,9 +75,7 @@
           }
         },
         "summary": "Register a company",
-        "tags": [
-          "companies"
-        ]
+        "tags": ["companies"]
       }
     },
     "/sie/import": {
@@ -120,9 +114,7 @@
           }
         },
         "summary": "Import a SIE4 file of accounts and historical verifications",
-        "tags": [
-          "sie"
-        ]
+        "tags": ["sie"]
       }
     },
     "/ledger/summary": {
@@ -145,9 +137,7 @@
           }
         },
         "summary": "Counts and date range of the imported history",
-        "tags": [
-          "ledger"
-        ]
+        "tags": ["ledger"]
       }
     },
     "/ledger/accounts": {
@@ -170,9 +160,7 @@
           }
         },
         "summary": "This company's chart of accounts",
-        "tags": [
-          "ledger"
-        ]
+        "tags": ["ledger"]
       }
     },
     "/ledger/verifications": {
@@ -205,9 +193,7 @@
           }
         },
         "summary": "Imported verifications, newest first",
-        "tags": [
-          "ledger"
-        ]
+        "tags": ["ledger"]
       }
     },
     "/bank/import": {
@@ -246,9 +232,7 @@
           }
         },
         "summary": "Import a bank CSV of transactions to be coded",
-        "tags": [
-          "bank"
-        ]
+        "tags": ["bank"]
       }
     },
     "/bank/transactions": {
@@ -281,9 +265,7 @@
           }
         },
         "summary": "Imported bank transactions, newest first",
-        "tags": [
-          "bank"
-        ]
+        "tags": ["bank"]
       }
     },
     "/suggestions/generate": {
@@ -316,9 +298,7 @@
           }
         },
         "summary": "Propose an entry for every transaction that has none",
-        "tags": [
-          "suggestions"
-        ]
+        "tags": ["suggestions"]
       }
     },
     "/suggestions": {
@@ -351,9 +331,7 @@
           }
         },
         "summary": "Transactions with their current proposal and entry preview",
-        "tags": [
-          "suggestions"
-        ]
+        "tags": ["suggestions"]
       }
     },
     "/suggestions/{transactionId}/decide": {
@@ -394,9 +372,7 @@
           }
         },
         "summary": "Approve or correct a proposal, creating the journal entry",
-        "tags": [
-          "suggestions"
-        ]
+        "tags": ["suggestions"]
       }
     }
   },
@@ -423,10 +399,7 @@
             "description": "Swedish organisation number"
           }
         },
-        "required": [
-          "name",
-          "orgNumber"
-        ]
+        "required": ["name", "orgNumber"]
       },
       "DecideDto": {
         "type": "object",
@@ -448,10 +421,7 @@
             ]
           }
         },
-        "required": [
-          "accountNumber",
-          "vatTreatment"
-        ]
+        "required": ["accountNumber", "vatTreatment"]
       }
     }
   }

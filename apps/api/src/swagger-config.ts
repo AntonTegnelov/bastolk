@@ -5,7 +5,9 @@ import { DocumentBuilder } from '@nestjs/swagger';
 export function swaggerConfig() {
   return new DocumentBuilder()
     .setTitle('Bastolk')
-    .setDescription('Bookkeeping suggestions for bank transactions, reviewed by a person')
+    .setDescription(
+      'Bookkeeping suggestions for bank transactions, reviewed by a person',
+    )
     .setVersion('0.1')
     .addGlobalParameters({
       name: 'x-company-id',
