@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+data
+pnpm-lock.yaml
+
+# Prose and hand-maintained config are the owner's formatting, not Prettier's.
+*.md
+*.yml
+*.yaml
