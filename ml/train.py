@@ -78,6 +78,10 @@ def exact_match(model, tokenizer, rows: list[dict], limit: int) -> dict:
     vat_right = 0
     both_right = 0
     unparsable = 0
+    # Per label, because an aggregate hides which accounts the model cannot
+    # tell apart, and that is the interesting part of the comparison.
+    per_label: dict[str, dict[str, int]] = {}
+    confusions: dict[str, int] = {}
 
     for row in sample:
         prompt = tokenizer.apply_chat_template(
@@ -109,6 +113,16 @@ def exact_match(model, tokenizer, rows: list[dict], limit: int) -> dict:
         vat_right += int(vat_ok)
         both_right += int(account_ok and vat_ok)
 
+        label = f"{row['account']}|{row['vat']}"
+        counts = per_label.setdefault(label, {"seen": 0, "account": 0, "both": 0})
+        counts["seen"] += 1
+        counts["account"] += int(account_ok)
+        counts["both"] += int(account_ok and vat_ok)
+
+        if not account_ok:
+            key = f"{row['account']} -> {parsed.get('account')}"
+            confusions[key] = confusions.get(key, 0) + 1
+
     total = max(len(sample), 1)
     return {
         "examples": len(sample),
@@ -116,6 +130,17 @@ def exact_match(model, tokenizer, rows: list[dict], limit: int) -> dict:
         "vatAccuracy": vat_right / total,
         "bothAccuracy": both_right / total,
         "unparsable": unparsable,
+        "perLabel": {
+            label: {
+                "seen": counts["seen"],
+                "accountAccuracy": counts["account"] / counts["seen"],
+                "bothAccuracy": counts["both"] / counts["seen"],
+            }
+            for label, counts in sorted(per_label.items())
+        },
+        "topConfusions": dict(
+            sorted(confusions.items(), key=lambda item: -item[1])[:15]
+        ),
     }
 
 
