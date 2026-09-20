@@ -155,6 +155,14 @@ function Row({
               <div className="detail-grid">
                 <div>
                   <h4>Entry this would create</h4>
+                  {row.suggestion.buildError && (
+                    // A stored proposal that the rules module can no longer
+                    // build. Saying so beats rendering an empty table.
+                    <p className="error">
+                      No entry can be built from this proposal:{' '}
+                      {row.suggestion.buildError}
+                    </p>
+                  )}
                   <table className="lines">
                     <tbody>
                       {row.suggestion.lines.map((line, index) => (
