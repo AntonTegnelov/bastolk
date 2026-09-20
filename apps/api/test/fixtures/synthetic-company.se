@@ -1,0 +1,42 @@
+#FLAGGA 0
+#PROGRAM "Bastolk testdata" 1.0
+#FORMAT PC8
+#SIETYP 4
+#GEN 20260901
+#FNAMN "Exempelbolaget AB"
+#ORGNR 556677-8899
+#KONTO 1930 "F”retagskonto"
+#KONTO 2440 "Leverant”rsskulder"
+#KONTO 2614 "Utg†ende moms omv„nd skattskyldighet 25%"
+#KONTO 2641 "Debiterad ing†ende moms"
+#KONTO 2645 "Ber„knad ing†ende moms p† f”rv„rv fr†n utlandet"
+#KONTO 2710 "Personalskatt"
+#KONTO 4535 "Ink”p av tj„nster fr†n annat EU-land 25%"
+#KONTO 5420 "Programvaror"
+#KONTO 6570 "Bankkostnader"
+#KONTO 7010 "L”ner till tj„nstem„n"
+
+#VER "A" "1" 20260115 "Bankavgift" 20260115
+{
+   #TRANS 6570 {} 162.00 20260115 "Bankavgifter"
+   #TRANS 1930 {} -162.00 20260115 ""
+}
+#VER "A" "2" 20260118 "Programvara inrikes" 20260118
+{
+   #TRANS 5420 {} 1000.00 20260118 "MOLNTJŽNST AB"
+   #TRANS 2641 {} 250.00 20260118 ""
+   #TRANS 1930 {} -1250.00 20260118 ""
+}
+#VER "A" "3" 20260202 "Programvara EU omv„nd skattskyldighet" 20260202
+{
+   #TRANS 5420 {} 1036.81 20260202 "EU SOFTWARE"
+   #TRANS 1930 {} -1036.81 20260202 ""
+   #TRANS 2614 {} -259.20 20260202 ""
+   #TRANS 2645 {} 259.20 20260202 ""
+}
+#VER "A" "4" 20260225 "L”neutbetalning" 20260225
+{
+   #TRANS 7010 {} 30000.00 20260225 "L™N"
+   #TRANS 2710 {} -8000.00 20260225 ""
+   #TRANS 1930 {} -22000.00 20260225 ""
+}
