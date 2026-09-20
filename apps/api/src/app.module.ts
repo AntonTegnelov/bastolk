@@ -6,6 +6,7 @@ import { LedgerModule } from './ledger/ledger.module.js';
 import { PredictorsModule } from './predictors/predictors.module.js';
 import { SieModule } from './sie/sie.module.js';
 import { SuggestionsModule } from './suggestions/suggestions.module.js';
+import { TrainingModule } from './training/training.module.js';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SuggestionsModule } from './suggestions/suggestions.module.js';
     LedgerModule,
     BankModule,
     SuggestionsModule,
+    TrainingModule,
   ],
 })
 export class AppModule {}

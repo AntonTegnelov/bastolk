@@ -20,7 +20,8 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "dev": "nest start --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "openapi": "nest build && node dist/openapi.js"
+    "openapi": "nest build && node dist/openapi.js",
+    "dataset:build": "nest build && node dist/dataset.js"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
