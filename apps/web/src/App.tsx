@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCompanies, useCreateCompany, useHealth } from './hooks.js';
 import { ImportPage } from './pages/ImportPage.js';
 import { ModelsPage } from './pages/ModelsPage.js';
@@ -105,15 +105,12 @@ function HealthBadge() {
 }
 
 export default function App() {
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  // Read once when the component is created rather than synchronised in an
+  // effect, which would render the empty state first and then replace it.
+  const [companyId, setCompanyId] = useState<string | null>(() =>
+    localStorage.getItem(STORED_COMPANY),
+  );
   const [tab, setTab] = useState<Tab>('review');
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORED_COMPANY);
-    if (stored) {
-      setCompanyId(stored);
-    }
-  }, []);
 
   const pick = (id: string) => {
     setCompanyId(id || null);

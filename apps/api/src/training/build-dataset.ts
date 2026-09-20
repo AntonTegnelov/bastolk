@@ -177,7 +177,9 @@ export function buildDataset(
   const validation: DatasetExample[] = [];
   const perLabel: Record<string, number> = {};
 
-  for (const [label, examples] of [...byLabel.entries()].sort()) {
+  const ordered = [...byLabel.entries()].sort(([a], [b]) => a.localeCompare(b));
+
+  for (const [label, examples] of ordered) {
     perLabel[label] = examples.length;
     const holdOut = Math.max(1, Math.round(examples.length * validationShare));
 
