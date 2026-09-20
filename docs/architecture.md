@@ -115,7 +115,9 @@ The LLM is trained on generated examples and judged on real ones. Each step belo
 
 ### Synthetic training data
 
-A generator command in the API builds the dataset from a small taxonomy file. The taxonomy lists the 30 to 40 BAS accounts a small company actually uses, the VAT treatments that are valid for each, and typical purchase scenarios per account.
+A taxonomy file lists the 30 to 40 BAS accounts a small company actually uses, the VAT treatments that are valid for each, and typical purchase scenarios per account. Writing the texts and assembling the dataset are separate steps, and only the second is a command in the API.
+
+**Corrected 2026-09-20:** this section described one generator command calling a hosted model. In practice the writing is a fan-out: one small-model agent per account and VAT pair, each writing a batch in that label's voice, each batch then read by a second agent that rejects texts which do not fit the label. Two rounds were run. The batches are merged by hand after being read, and the API command assembles what survives.
 
 - **The label comes first, the text second.** For each account, VAT treatment and scenario, the hosted model is asked to write bank texts that would be booked that way. Asking a model to label random texts would import its mistakes as ground truth. Conditioning on the label makes wrong labels rare.
 - **Real format patterns are the style guide.** The prompt includes anonymised patterns from real bank files: upper case, truncation, card prefixes, city suffixes, reference codes. Without them a generator writes tidy descriptions that no bank ever produced.
@@ -123,7 +125,9 @@ A generator command in the API builds the dataset from a small taxonomy file. Th
 - **Near-duplicates are removed, and a slice is held out as synthetic validation data.** Validation data drives early stopping. Real data is never used for that, so the real test set stays clean.
 - **A sample of 50 is read by hand before any training.** Ten minutes of reading catches a systematic generator error that would otherwise cost a full training run to discover.
 
-The generator is TypeScript, not Python. It shares the text normalisation and the chat format with the rest of the API, so training and serving cannot drift apart.
+Assembly is TypeScript, not Python, and it owns every decision the dataset depends on: which texts survive, what amount each carries, and where the split falls. Amounts are derived from a hash of the text rather than written by a model, so the same inputs rebuild the same dataset and a diff means the texts changed.
+
+The batch reviewer is not a gate. It passed a batch of company transfers containing taxi fares and a salary run, which is why batches are still read by a person before training and why the assembler drops any text that was written for two different labels.
 
 ### From verifications to labels
 
