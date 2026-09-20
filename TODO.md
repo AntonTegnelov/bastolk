@@ -29,7 +29,13 @@ is worth doing before it.
 
 ## Serving the fine-tuned model
 
-- [ ] **Register the merged model with Ollama and confirm the API reaches
+- [ ] **Convert the merged model to GGUF.** Ollama 0.34.2 rejects
+  `Qwen2ForCausalLM` from safetensors with `unsupported MLX architecture`, and
+  the `gguf` pip package ships inspection tools rather than the converter. The
+  converter is `convert_hf_to_gguf.py` in the llama.cpp repository, which is
+  one clone and one command for a person. Blob upload to Ollama over HTTP
+  already works, so that is the only missing step.
+- [ ] **Register the converted model with Ollama and confirm the API reaches
   it.** `llm.predictor.ts` calls the native chat endpoint and reports itself
   unavailable when no version is active, which is the path the composite takes
   today. Nothing has exercised the other branch against a real model.

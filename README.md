@@ -40,6 +40,13 @@ one, and download the approved entries as SIE4. Built in a two-day time box.
   not arrive during the build, so everything is exercised against a synthetic
   fixture and the real bank file. The consequence is in the results below and
   it is the main thing to fix next.
+- **The fine-tuned model is trained but not served.** The training pipeline
+  runs end to end and produces a merged model, but Ollama 0.34.2 refuses to
+  import `Qwen2ForCausalLM` from safetensors (`unsupported MLX architecture`),
+  so the model has to be converted to GGUF first and that needs llama.cpp's
+  converter. Until a version is served, the LLM predictor reports itself
+  unavailable and the composite falls through to the baseline, which is the
+  designed behaviour while the GPU is busy and is exercised here for real.
 - **No background job queue.** Training is started by hand rather than from
   BullMQ. It was second on the cut list and the cut was taken.
 - **The frontend's response types are hand-mirrored** for the endpoints that
