@@ -1,0 +1,213 @@
+{
+  "formatPatterns": [
+    "Upper case, truncated to about 14 characters, often mid-word",
+    "Card purchases carry a vendor prefix and an asterisk, as in NAMN* PRODU",
+    "Some rows are the bank's own Swedish labels in sentence case",
+    "Domain-like vendor names appear, as in VENDOR.SE ABCD",
+    "Reference numbers appear alone, as in 732-6853",
+    "City or country suffixes are common, as in VENDOR STOCKHOL"
+  ],
+  "accounts": [
+    {
+      "number": "4535",
+      "name": "Inköp av tjänster från annat EU-land, 25%",
+      "vat": ["REVERSE_CHARGE_EU"],
+      "weight": 8,
+      "scenarios": ["molntjänst", "utvecklarverktyg", "annonsering", "AI-API"]
+    },
+    {
+      "number": "4545",
+      "name": "Import av tjänster från land utanför EU, 25%",
+      "vat": ["REVERSE_CHARGE_NON_EU"],
+      "weight": 8,
+      "scenarios": [
+        "amerikansk molnleverantör",
+        "SaaS-prenumeration",
+        "AI-API",
+        "lagring"
+      ]
+    },
+    {
+      "number": "5410",
+      "name": "Förbrukningsinventarier",
+      "vat": ["DOMESTIC_25"],
+      "weight": 4,
+      "scenarios": ["tangentbord", "skärm", "kontorsstol", "hårddisk"]
+    },
+    {
+      "number": "5420",
+      "name": "Programvaror",
+      "vat": ["DOMESTIC_25", "REVERSE_CHARGE_EU"],
+      "weight": 7,
+      "scenarios": ["licens", "prenumeration", "utvecklingsverktyg"]
+    },
+    {
+      "number": "5460",
+      "name": "Förbrukningsmaterial",
+      "vat": ["DOMESTIC_25"],
+      "weight": 3,
+      "scenarios": ["kontorsmaterial", "kaffe", "batterier"]
+    },
+    {
+      "number": "5611",
+      "name": "Drivmedel för personbilar",
+      "vat": ["DOMESTIC_25"],
+      "weight": 3,
+      "scenarios": ["tankning", "laddning"]
+    },
+    {
+      "number": "5615",
+      "name": "Leasing av personbilar",
+      "vat": ["DOMESTIC_25"],
+      "weight": 2,
+      "scenarios": ["månadsleasing"]
+    },
+    {
+      "number": "5800",
+      "name": "Resekostnader",
+      "vat": ["DOMESTIC_6"],
+      "weight": 4,
+      "scenarios": ["tågbiljett", "flygbiljett", "taxi", "kollektivtrafik"]
+    },
+    {
+      "number": "5831",
+      "name": "Kost och logi i Sverige",
+      "vat": ["DOMESTIC_12"],
+      "weight": 3,
+      "scenarios": ["hotell", "lunch på resa"]
+    },
+    {
+      "number": "5910",
+      "name": "Annonsering",
+      "vat": ["DOMESTIC_25", "REVERSE_CHARGE_EU"],
+      "weight": 3,
+      "scenarios": ["annonskampanj", "sökannonsering"]
+    },
+    {
+      "number": "6070",
+      "name": "Representation",
+      "vat": ["DOMESTIC_12"],
+      "weight": 2,
+      "scenarios": ["kundlunch", "middag"]
+    },
+    {
+      "number": "6110",
+      "name": "Kontorsmateriel",
+      "vat": ["DOMESTIC_25"],
+      "weight": 2,
+      "scenarios": ["papper", "pennor", "skrivare"]
+    },
+    {
+      "number": "6212",
+      "name": "Mobiltelefon",
+      "vat": ["DOMESTIC_25"],
+      "weight": 4,
+      "scenarios": ["mobilabonnemang", "surf"]
+    },
+    {
+      "number": "6230",
+      "name": "Datakommunikation",
+      "vat": ["DOMESTIC_25"],
+      "weight": 3,
+      "scenarios": ["bredband", "fiber"]
+    },
+    {
+      "number": "6250",
+      "name": "Postbefordran",
+      "vat": ["DOMESTIC_25"],
+      "weight": 2,
+      "scenarios": ["frakt", "paket", "porto"]
+    },
+    {
+      "number": "6310",
+      "name": "Företagsförsäkringar",
+      "vat": ["NONE"],
+      "weight": 2,
+      "scenarios": ["företagsförsäkring", "ansvarsförsäkring"]
+    },
+    {
+      "number": "6530",
+      "name": "Redovisningstjänster",
+      "vat": ["DOMESTIC_25"],
+      "weight": 3,
+      "scenarios": ["bokföringsbyrå", "bokslut", "revisor"]
+    },
+    {
+      "number": "6540",
+      "name": "IT-tjänster",
+      "vat": ["DOMESTIC_25", "REVERSE_CHARGE_EU"],
+      "weight": 5,
+      "scenarios": ["konsult", "drift", "support"]
+    },
+    {
+      "number": "6570",
+      "name": "Bankkostnader",
+      "vat": ["NONE"],
+      "weight": 6,
+      "scenarios": ["bankavgift", "årsavgift", "betalningsavgift"]
+    },
+    {
+      "number": "6590",
+      "name": "Övriga externa tjänster",
+      "vat": ["DOMESTIC_25"],
+      "weight": 2,
+      "scenarios": ["tjänst", "abonnemang"]
+    },
+    {
+      "number": "6970",
+      "name": "Tidningar och facklitteratur",
+      "vat": ["DOMESTIC_6"],
+      "weight": 2,
+      "scenarios": ["prenumeration", "facktidning"]
+    },
+    {
+      "number": "6991",
+      "name": "Övriga avdragsgilla kostnader",
+      "vat": ["DOMESTIC_25", "NONE"],
+      "weight": 2,
+      "scenarios": ["medlemsavgift", "avgift"]
+    },
+    {
+      "number": "2510",
+      "name": "Skatteskulder",
+      "vat": ["NONE"],
+      "weight": 3,
+      "scenarios": ["skatteinbetalning", "preliminärskatt"]
+    },
+    {
+      "number": "2710",
+      "name": "Personalskatt",
+      "vat": ["NONE"],
+      "weight": 2,
+      "scenarios": ["arbetsgivardeklaration"]
+    },
+    {
+      "number": "2730",
+      "name": "Lagstadgade sociala avgifter",
+      "vat": ["NONE"],
+      "weight": 2,
+      "scenarios": ["arbetsgivaravgift"]
+    },
+    {
+      "number": "3011",
+      "name": "Försäljning tjänster inom Sverige, 25%",
+      "vat": ["DOMESTIC_25"],
+      "weight": 6,
+      "scenarios": ["kundbetalning", "fakturabetalning", "konsultarvode"]
+    },
+    {
+      "number": "7010",
+      "name": "Löner till tjänstemän",
+      "vat": ["NONE"],
+      "weight": 4,
+      "scenarios": ["löneutbetalning"]
+    },
+    {
+      "number": "1930",
+      "name": "Företagskonto",
+      "vat": ["NONE"],
+      "weight": 2,
+      "scenarios": ["överföring mellan egna konton"]
+    }
+  ]
+}

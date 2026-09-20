@@ -8,6 +8,8 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/common/prisma.service.js';
 import { COMPANY_HEADER } from '../src/companies/company.guard.js';
+import { decodeSie } from '../src/sie/parser/decode.js';
+import { parseSie } from '../src/sie/parser/parse-sie.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const sieFixture = join(here, 'fixtures/synthetic-company.se');
@@ -199,6 +201,42 @@ describe('Suggestion loop (e2e)', () => {
     });
     expect(journalEntries).toBe(1);
   }, 120_000);
+
+  it('exports approved entries as CP437 SIE4 that parses back', async () => {
+    const response = await withCompany(
+      request(app.getHttpServer()).get('/sie/export'),
+    )
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(chunk));
+        res.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+
+    const parsed = parseSie(decodeSie(response.body as Buffer));
+
+    // One decision was made above, so exactly one entry leaves the tool.
+    expect(parsed.verifications).toHaveLength(1);
+    expect(
+      parsed.verifications[0].transactions.reduce((s, t) => s + t.amountOre, 0),
+    ).toBe(0);
+    expect(parsed.orgNumber).toBe(ORG);
+  });
+
+  it('refuses to export for a company that has approved nothing', async () => {
+    const other = await request(app.getHttpServer())
+      .post('/companies')
+      .send({ name: 'Tombolaget AB', orgNumber: '999902-0009' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get('/sie/export')
+      .set(COMPANY_HEADER, other.body.id)
+      .expect(400);
+
+    await prisma.company.deleteMany({ where: { orgNumber: '999902-0009' } });
+  });
 
   it('refuses to decide the same transaction twice', async () => {
     const list = await withCompany(
