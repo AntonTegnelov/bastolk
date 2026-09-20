@@ -12,7 +12,10 @@ export interface RegisterVersionInput {
   readonly baseModel: string;
   readonly datasetSize: number;
   readonly filePath: string | null;
-  readonly metrics: EvaluationMetrics;
+  /// Null until the version has been scored on real held-out months. A
+  /// version without them cannot be promoted, which is the gate refusing to
+  /// judge a model on a figure from somewhere else.
+  readonly metrics: EvaluationMetrics | null;
 }
 
 @Injectable()
@@ -41,7 +44,8 @@ export class ModelRegistryService {
         datasetSize: input.datasetSize,
         filePath: input.filePath,
         status: ModelStatus.READY,
-        metrics: input.metrics as unknown as Prisma.InputJsonValue,
+        metrics: (input.metrics ?? undefined) as unknown as
+          Prisma.InputJsonValue | undefined,
       },
     });
   }
