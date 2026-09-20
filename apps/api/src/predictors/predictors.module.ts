@@ -31,9 +31,12 @@ import { TrainingExamplesService } from './training-examples.service.js';
         prisma: PrismaService,
         config: ConfigService,
       ) => {
+        // Validated at boot with its default applied, so it is read rather
+        // than defaulted a second time here.
         const settings: CompositeSettings = {
-          knnConfidenceThreshold:
-            config.get<number>('KNN_CONFIDENCE_THRESHOLD') ?? 0.6,
+          knnConfidenceThreshold: config.getOrThrow<number>(
+            'KNN_CONFIDENCE_THRESHOLD',
+          ),
         };
         return new CompositePredictor(knn, llm, prisma, settings);
       },
@@ -47,7 +50,7 @@ import { TrainingExamplesService } from './training-examples.service.js';
         llm: LlmPredictor,
         composite: CompositePredictor,
       ) => {
-        switch (config.get<string>('PREDICTOR_STRATEGY') ?? 'composite') {
+        switch (config.getOrThrow<string>('PREDICTOR_STRATEGY')) {
           case 'knn':
             return knn;
           case 'llm':
