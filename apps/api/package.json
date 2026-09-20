@@ -19,7 +19,8 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "dev": "nest start --watch",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "openapi": "nest build && node dist/openapi.js"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",

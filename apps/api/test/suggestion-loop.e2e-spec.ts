@@ -103,6 +103,31 @@ describe('Suggestion loop (e2e)', () => {
     }
   }, 120_000);
 
+  // A proposal that cannot become a balanced entry is not a proposal. Reverse
+  // charge on money coming in is the case that found this: the rules module
+  // refuses it, and before the filter existed that refusal took down the whole
+  // review screen rather than dropping one candidate.
+  it('never stores a proposal the rules module cannot build', async () => {
+    const list = await withCompany(request(app.getHttpServer()).get('/suggestions')).expect(200);
+
+    expect(list.body.length).toBeGreaterThan(0);
+    for (const row of list.body) {
+      if (row.suggestion) {
+        expect(row.suggestion.buildError).toBeNull();
+        expect(row.suggestion.lines.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('proposes for money coming in as well as money going out', async () => {
+    const list = await withCompany(request(app.getHttpServer()).get('/suggestions')).expect(200);
+    const incoming = list.body.find((row: { amountOre: number }) => row.amountOre > 0);
+
+    expect(incoming).toBeDefined();
+    expect(incoming.suggestion?.vatTreatment).not.toBe('REVERSE_CHARGE_EU');
+    expect(incoming.suggestion?.vatTreatment).not.toBe('REVERSE_CHARGE_NON_EU');
+  });
+
   it('shows the past entries behind a proposal as its evidence', async () => {
     const list = await withCompany(
       request(app.getHttpServer()).get('/suggestions'),

@@ -25,6 +25,7 @@ import {
   buildJournalLines,
   type JournalLineDraft,
 } from '../rules/build-entry.js';
+import { RuleError } from '../rules/errors.js';
 import type { DecideDto } from './dto/decide.dto.js';
 
 export interface GenerateResult {
@@ -47,9 +48,31 @@ export interface SuggestionView {
     vatTreatment: VatTreatment;
     evidence: unknown;
     /// The balanced entry this suggestion would produce. Built by the rules
-    /// module, never by the model.
+    /// module, never by the model. Empty when the stored proposal predates a
+    /// rule change and can no longer be built, which is reported rather than
+    /// hidden.
     lines: JournalLineDraft[];
+    buildError: string | null;
   } | null;
+}
+
+/// Asks the rules module whether a judgement can become a correct entry.
+/// Returns the lines or the refusal, never a partial entry.
+function tryBuild(
+  accountNumber: string,
+  vatTreatment: VatTreatment,
+  amountOre: number,
+): { lines: JournalLineDraft[]; error: null } | { lines: []; error: string } {
+  try {
+    return { lines: buildJournalLines({ counterAccountNumber: accountNumber, vatTreatment, amountOre }), error: null };
+  } catch (error) {
+    // A rule refusal is an answer to the question asked. Anything else is a
+    // bug and is allowed to propagate.
+    if (error instanceof RuleError) {
+      return { lines: [], error: error.message };
+    }
+    throw error;
+  }
 }
 
 /// Orchestration only: predict, apply the rules, store, approve, correct. The
@@ -88,12 +111,25 @@ export class SuggestionsService {
         bookedOn: transaction.bookedOn,
       });
 
-      if (prediction.candidates.length === 0) {
+      // A candidate that cannot become a balanced entry is not a suggestion,
+      // for the same reason an account outside the chart is not one: reverse
+      // charge on money coming in, for example, has no correct entry. It is
+      // dropped before it is stored rather than breaking the review screen.
+      const buildable = prediction.candidates.filter(
+        (candidate) =>
+          tryBuild(candidate.accountNumber, candidate.vatTreatment, transaction.amountOre)
+            .error === null,
+      );
+
+      if (buildable.length === 0) {
         withoutCandidate += 1;
         continue;
       }
 
-      await this.storeSuggestion(company, transaction, prediction);
+      await this.storeSuggestion(company, transaction, {
+        ...prediction,
+        candidates: buildable,
+      });
       suggested += 1;
     }
 
@@ -142,6 +178,9 @@ export class SuggestionsService {
         vatTreatment: VatTreatment;
       }[];
       const best = candidates[0];
+      const built = best
+        ? tryBuild(best.accountNumber, best.vatTreatment, transaction.amountOre)
+        : { lines: [] as JournalLineDraft[], error: null };
 
       return {
         transactionId: transaction.id,
@@ -158,11 +197,8 @@ export class SuggestionsService {
                 accountNumber: best.accountNumber,
                 vatTreatment: best.vatTreatment,
                 evidence: suggestion.evidence,
-                lines: buildJournalLines({
-                  counterAccountNumber: best.accountNumber,
-                  vatTreatment: best.vatTreatment,
-                  amountOre: transaction.amountOre,
-                }),
+                lines: built.lines,
+                buildError: built.error,
               }
             : null,
       };
