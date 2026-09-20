@@ -71,32 +71,45 @@ it never trained on. This is the optimistic number: the validation slice comes
 from the same generator as the training set, so it shares its vocabulary and
 its habits. Real bank text will be harder.
 
-| | Qwen2.5-1.5B-Instruct, LoRA, 3 epochs |
-| --- | --- |
-| Account correct | 39.2% |
-| VAT treatment correct | 74.1% |
-| Both correct | 37.8% |
-| Answers that did not parse | 0 |
-| Held-out examples behind those figures | 143 |
-| Training examples | 1277, over 31 account and VAT labels, smallest label 22 |
-| Real bank transactions coded end to end | 73 |
+Two versions were trained, identical in every respect except how much data
+they saw. Both are scored on the **same** 143 held-out examples, and a check
+confirms none of those examples reached either training set.
+
+| | v1 | v2 |
+| --- | --- | --- |
+| Training examples | 1277 | 3573 |
+| Account correct | 39.2% | 60.8% |
+| VAT treatment correct | 74.1% | 83.2% |
+| Both correct | 37.8% | 60.1% |
+| Answers that did not parse | 0 | 0 |
+
+Base model Qwen2.5-1.5B-Instruct, LoRA adapters in bfloat16, three epochs,
+143 held-out examples behind every figure. 73 real bank transactions were
+coded end to end.
 
 Reading those numbers:
 
-- **The format was learned completely and the task was not.** Not one of the
-  143 answers failed to parse, so the model reliably produces the small JSON
-  object it was trained to produce. Choosing the right account out of 31 is a
-  different problem, and 39% is weak.
-- **VAT is much easier than the account**, which is what you would expect: the
-  treatment follows mostly from whether the supplier reads as Swedish or
-  foreign, and that is visible in the text. The account needs to know what the
-  supplier actually sells.
-- **1277 examples is small.** The design called for a few thousand and two
-  generation rounds produced this after deduplication and two discarded
-  batches. More data is the first thing to try before anything clever.
-- **No baseline sits beside this figure**, because the baseline searches a
-  company's real history and there is none. That makes this an unanchored
-  number, and it should not be quoted without saying so.
+- **The format was learned completely by both.** Not one answer out of 286
+  failed to parse. Producing the small JSON object was never the hard part.
+- **Nearly tripling the data moved the account from 39% to 61%.** The recipe
+  did not change, so that is a data-quantity result rather than a tuning one,
+  and it says the first model was starved rather than badly configured. It
+  also says the next gain is likelier to come from more and better generated
+  text than from a larger base model.
+- **VAT is consistently easier than the account.** The treatment follows
+  mostly from whether the supplier reads as Swedish or foreign, and that is
+  visible in the text. The account needs to know what the supplier sells.
+- **The remaining errors are mostly real ambiguity, not noise.** The most
+  common confusions are `5420 -> 6540` (software against IT services),
+  `6540 -> 6590` (IT services against other external services), and
+  `2730 <-> 2710` (employer contributions against employee tax). The last pair
+  is paid to the same authority and can produce the same bank text, so a
+  person could not reliably tell them apart from the text alone either. That
+  is a limit of the input, and it is an argument for the correction loop
+  rather than for a better model.
+- **No baseline sits beside these figures**, because the baseline searches a
+  company's real history and there is none. That makes them unanchored, and
+  they should not be quoted without saying so.
 
 ![The model versions screen](docs/images/models.png)
 

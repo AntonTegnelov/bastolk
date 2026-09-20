@@ -70,9 +70,17 @@ is worth doing before it.
 
 ## Data quality
 
-- [ ] **Generate a larger and more varied dataset.** Two rounds produced 1420
-  usable examples across 31 labels. Two batches had to be discarded after
-  reading them, which is a generator problem rather than a volume one.
+Going from 1277 to 3573 training examples moved account accuracy from 39% to
+61% with no other change, so this section is where the next gain is.
+
+- [ ] **Keep generating.** The curve has not obviously flattened, and a fourth
+  round costs minutes. Report the accuracy at each dataset size so the point
+  where it stops paying is visible rather than guessed at.
+- [ ] **Attack the confusions rather than the volume.** The errors concentrate
+  on `5420` against `6540`, `6540` against `6590`, and `2730` against `2710`.
+  The first two are semantically adjacent and want more contrastive examples.
+  The third is paid to the same authority and can carry the same bank text, so
+  more data will not fix it and the correction loop has to.
 - [ ] **Give the batch reviewer something harder than its own judgement.** It
   passed a batch of transfers that contained taxi fares and a salary run. A
   cheaper and stricter check is whether a text also appears under another
