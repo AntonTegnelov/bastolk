@@ -117,8 +117,21 @@ export function ModelsPage({ companyId }: { companyId: string }) {
                   disabled={promote.isPending}
                   onClick={async () => {
                     setVerdict(null);
-                    const result = await promote.mutateAsync(version.id);
-                    setVerdict(result.verdict);
+                    try {
+                      const result = await promote.mutateAsync(version.id);
+                      setVerdict(result.verdict);
+                    } catch (e) {
+                      // A version with no held-out metrics is refused by the
+                      // API. That is the gate answering, so it is shown as an
+                      // answer rather than thrown.
+                      setVerdict({
+                        promote: false,
+                        reason:
+                          e instanceof Error
+                            ? e.message
+                            : 'The gate could not judge this version',
+                      });
+                    }
                   }}
                 >
                   Run the gate

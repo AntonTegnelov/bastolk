@@ -66,13 +66,39 @@ which has no labels on it. Reporting a synthetic-on-synthetic score as though
 it meant something would be exactly the dishonesty the design set out to
 avoid.
 
-What can be reported:
+What can be reported is the fine-tuned model measured against synthetic data
+it never trained on. This is the optimistic number: the validation slice comes
+from the same generator as the training set, so it shares its vocabulary and
+its habits. Real bank text will be harder.
 
-| Figure | Value | On what |
-| --- | --- | --- |
-| Synthetic training examples | 1277 | 31 account and VAT labels, smallest label 22 examples |
-| Synthetic validation examples | 143 | Held out per label, drives early stopping |
-| Real bank transactions coded | 73 | Two years of one company's statement, every row proposed |
+| | Qwen2.5-1.5B-Instruct, LoRA, 3 epochs |
+| --- | --- |
+| Account correct | 39.2% |
+| VAT treatment correct | 74.1% |
+| Both correct | 37.8% |
+| Answers that did not parse | 0 |
+| Held-out examples behind those figures | 143 |
+| Training examples | 1277, over 31 account and VAT labels, smallest label 22 |
+| Real bank transactions coded end to end | 73 |
+
+Reading those numbers:
+
+- **The format was learned completely and the task was not.** Not one of the
+  143 answers failed to parse, so the model reliably produces the small JSON
+  object it was trained to produce. Choosing the right account out of 31 is a
+  different problem, and 39% is weak.
+- **VAT is much easier than the account**, which is what you would expect: the
+  treatment follows mostly from whether the supplier reads as Swedish or
+  foreign, and that is visible in the text. The account needs to know what the
+  supplier actually sells.
+- **1277 examples is small.** The design called for a few thousand and two
+  generation rounds produced this after deduplication and two discarded
+  batches. More data is the first thing to try before anything clever.
+- **No baseline sits beside this figure**, because the baseline searches a
+  company's real history and there is none. That makes this an unanchored
+  number, and it should not be quoted without saying so.
+
+![The model versions screen](docs/images/models.png)
 
 ### The evaluation is built and honest, even with nothing to measure
 
@@ -87,6 +113,11 @@ exists to prevent anyone from reporting.
 
 An end-to-end test pins the behaviour rather than the number, asserting that no
 neighbour returned under a cutoff is dated on or after it.
+
+The promotion gate refuses `bastolk-v1` for the same kind of reason: it has no
+held-out metrics, only synthetic ones, and promoting on a synthetic figure is
+the leak the split exists to prevent. That refusal is what the screenshot
+above shows.
 
 ## What I would do next, in order
 

@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { ModelStatus, type ModelVersion, type Prisma } from '@prisma/client';
 import { PrismaService } from '../common/prisma.service.js';
 import {
@@ -62,8 +67,10 @@ export class ModelRegistryService {
       throw new NotFoundException(`No model version ${versionId}`);
     }
     if (!candidate.metrics) {
-      throw new NotFoundException(
-        `Model version ${candidate.name} has no stored metrics to judge`,
+      // The version exists; it has simply never been scored on the held-out
+      // months. Promoting it would mean promoting on nothing.
+      throw new UnprocessableEntityException(
+        `Model version ${candidate.name} has no held-out metrics, so there is nothing to judge it on`,
       );
     }
 

@@ -149,6 +149,12 @@ export default function App() {
         >
           Import
         </button>
+        <button
+          className={tab === 'models' ? 'active' : ''}
+          onClick={() => setTab('models')}
+        >
+          Models
+        </button>
       </nav>
 
       <main>
