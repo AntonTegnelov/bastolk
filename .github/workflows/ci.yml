@@ -29,6 +29,7 @@ jobs:
       DATABASE_URL: postgresql://bastolk:bastolk@localhost:5432/bastolk?schema=public
       OLLAMA_URL: http://127.0.0.1:11434
       PORT: 3000
+      TRANSFORMERS_CACHE: ~/.cache/transformers
 
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +44,13 @@ jobs:
           cache: pnpm
 
       # A frozen lockfile proves the build is reproducible.
+      # The embedding model is a download on a cold cache, and the end-to-end
+      # tests load it.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/transformers
+          key: transformers-${{ runner.os }}-minilm-multilingual
+
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm --filter api exec prisma generate

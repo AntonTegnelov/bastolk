@@ -80,6 +80,9 @@ describe('SIE import (e2e)', () => {
     expect(response.body.accounts).toBe(10);
     expect(response.body.verifications).toBe(4);
     expect(response.body.companyName).toBe('Exempelbolaget AB');
+    // Three of the four become examples; the salary run has two non-bank,
+    // non-VAT lines and is not what a bank transaction looks like.
+    expect(response.body.examples).toBe(3);
   });
 
   it('classifies bank and VAT accounts from the BAS ranges', async () => {
