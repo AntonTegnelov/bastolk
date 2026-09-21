@@ -155,6 +155,12 @@ registers it with Ollama from that path.
   showed 7 GB). If a merge or GGUF conversion is killed, add a
   `%USERPROFILE%\.wslconfig` with `memory=11GB` and `wsl --shutdown` — that
   stops every container, so do it between work sessions, not mid-run.
+- **Edits to the frontend do nothing**: the checkout is a 9p bind mount and
+  inotify events do not reach the container, so Vite keeps serving the file it
+  read at startup. `apps/web/vite.config.ts` sets `server.watch.usePolling`
+  for this. Any other watcher (a test runner in watch mode, `tsc --watch`)
+  needs the same, or a restart after each change.
+
 - **Out of VRAM during training**: something is still loaded in Ollama.
   `curl $OLLAMA_BASE_URL/api/generate -d '{"model":"<name>","keep_alive":0}'`.
 

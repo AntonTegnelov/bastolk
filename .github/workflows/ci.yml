@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # The same image the dev stack uses, so pgvector is present.
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: bastolk
+          POSTGRES_PASSWORD: bastolk
+          POSTGRES_DB: bastolk
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bastolk"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://bastolk:bastolk@localhost:5432/bastolk?schema=public
+      OLLAMA_URL: http://127.0.0.1:11434
+      PORT: 3000
+      TRANSFORMERS_CACHE: ~/.cache/transformers
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # A frozen lockfile proves the build is reproducible.
+      # The embedding model is a download on a cold cache, and the end-to-end
+      # tests load it.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/transformers
+          key: transformers-${{ runner.os }}-minilm-multilingual
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter api exec prisma generate
+
+      - run: pnpm lint
+
+      - run: pnpm format:check
+
+      - run: pnpm typecheck
+
+      - run: pnpm test
+
+      # Migrations run from scratch, so a migration that only works against an
+      # already-migrated database fails here rather than on someone's machine.
+      - run: pnpm --filter api exec prisma migrate deploy
+
+      # There is no GPU here, so anything that needs the served model is
+      # replaced through the same seam the unit tests use.
+      - run: pnpm test:e2e
+
+      - run: pnpm build

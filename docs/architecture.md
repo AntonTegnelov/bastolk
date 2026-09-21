@@ -39,14 +39,14 @@ Choices follow two rules: match the target stack (TypeScript, NestJS, PostgreSQL
 | class-validator with a global validation pipe | Request validation | It is the Nest convention. DTO classes validate input and also generate the API schema, so one definition serves both. | Zod. Arguably nicer, but the goal is to learn the mainstream Nest path first. |
 | Nest's Swagger module with openapi-typescript | API contract and frontend types | Types for the React app are generated from the backend's DTOs, so the two cannot drift apart. The Swagger page also makes a handy demo tool. | A hand-written shared types package. It drifts, and it has to be maintained. |
 | BullMQ with Redis | Background jobs | Training takes minutes and must not block a request. Nest has first-class BullMQ support, and queues are central to any backend that processes documents. | pg-boss, which needs no Redis. Less conventional in Nest, so less useful as practice. This whole item is second on the cut list. |
-| Jest with Supertest | Unit and end-to-end tests | It is what the Nest scaffold generates, and Nest's testing module is built around it. | Vitest. Faster, but it needs extra configuration for Nest's decorator metadata, which is a time risk. |
+| Vitest with Supertest | Unit and end-to-end tests | It is what the Nest CLI scaffolds, as `vitest.config.ts` plus a separate `vitest.config.e2e.ts`, and Nest's testing module works on top of it unchanged. **Corrected 2026-09-20:** this row first named Jest, on the grounds that the scaffold generates it and that Vitest would need extra configuration for decorator metadata. Nest CLI 12 generates Vitest already configured, together with oxlint in place of ESLint and `"type": "module"`. | Jest. Restoring it would mean replacing the generated configs and working against the generator on every later `nest g`. |
 
 ### Models
 
 | Dependency | Role | Why this one | Rejected, and why |
 | --- | --- | --- | --- |
 | transformers.js with a small multilingual embedding model | Embeddings for nearest-neighbour search, computed inside the Node process on the CPU | It keeps the baseline model entirely in TypeScript. Running on the CPU means it never competes with the LLM or with training for the 8 GB of VRAM. | Embeddings from Ollama. Simpler to call, but they would occupy the GPU that training needs. |
-| [Unsloth Core](https://unsloth.ai/docs/get-started/install/windows-installation) with TRL and PEFT | Fine-tuning | Its memory savings are what make QLoRA comfortable in 8 GB. It exports the GGUF format that Ollama loads, and it documents a native Windows install through Conda, with Docker and WSL as alternatives. The library is used, not the Studio interface, because the goal is to understand the training script and to start it from a job. | Plain Hugging Face PEFT and TRL. They work, but they use more memory and need a manual conversion step for serving. |
+| PEFT with the transformers Trainer | Fine-tuning | LoRA adapters are all that train, which is what keeps a 1.5B model inside 8 GB alongside everything else on the card. **Corrected 2026-09-20:** this row first named Unsloth for its memory savings and its GGUF export. The memory savings are not needed at this size. The GGUF export is: Ollama 0.34.2 rejects `Qwen2ForCausalLM` from safetensors, so a merged model still has to be converted before it can be served, and that conversion is the one step this toolchain does not yet do. | Unsloth. It is a wrapper over the same libraries, and adopting it inside a time box would have added an install to debug before anything could train. It is the obvious thing to reconsider when the conversion step is built. |
 | A 2B-class instruct model, with a sub-1B model for the toy run | Base model | It must leave VRAM headroom during QLoRA, handle Swedish text, and be on Unsloth's supported list. The current Qwen small models fit all three. The choice is cheap to change, since only a model name differs. | 7B-class models. They fit in 4-bit, but training is slower and the task is too simple to need them. |
 | [Ollama](https://pkg.go.dev/github.com/ollama/ollama/api) | Serving the fine-tuned model over local HTTP | It loads a GGUF file with one command and unloads it on request, which frees the GPU before training. Its native chat endpoint returns token log-probabilities, which the confidence score is built on. | llama.cpp's own server. It offers more control and stays as the fallback. Note that Ollama's OpenAI-compatible endpoint [has been reported](https://github.com/ollama/ollama/issues/16117) to drop log-probabilities, so the native endpoint is the one to call. |
 | A large hosted model, called through its API | Writing the synthetic training set, once per dataset version | Varied, realistic Swedish bank texts that fit a given BAS account need a strong model. It runs offline from the product, so it adds no runtime dependency and no cost per suggestion. | Generating with a local 7B model. It is slower, weaker on Swedish bookkeeping, and would occupy the GPU. |
@@ -76,7 +76,7 @@ Modules are divided by business capability, not by technical layer, and each one
 | `predictors` | The prediction interface and its two implementations | Custom providers, injection tokens, factory providers | This is the clearest use of dependency injection in the project. The rest of the code asks for "a predictor" and never learns which one it got. |
 | `rules` | Turning an account and a VAT treatment into balanced journal lines, plus checks | Nothing Nest-specific, by design | Accounting rules must be testable without starting a framework. It is a module only so others can import it. |
 | `suggestions` | Orchestration: predict, apply rules, store, approve, correct | Services composed from other modules, transactions, an exception filter for domain errors | This is where the use cases live. Keeping it thin shows that the other modules have the right shape. |
-| `training` | Dataset export, the training job, the model registry and the promotion gate | Queue producers and processors, child processes, lifecycle hooks | It is long-running and failure-prone, and it needs different error handling from request code. |
+| `training` | Dataset assembly, evaluation, the model registry and the promotion gate | Custom providers, and commands that run the same services outside a request. **Corrected 2026-09-20:** this row claimed queue producers and processors. The queue was second on the cut list and the cut was taken, so training is started by hand and a finished run is registered by a command. The module is otherwise as described. | It is long-running and failure-prone, and it needs different error handling from request code. |
 | `common` | Configuration, the database client, a logging interceptor, health checks | Global modules, interceptors, validated configuration | Shared infrastructure sits in one place, so feature modules contain only features. |
 
 ### The predictor interface
@@ -115,7 +115,9 @@ The LLM is trained on generated examples and judged on real ones. Each step belo
 
 ### Synthetic training data
 
-A generator command in the API builds the dataset from a small taxonomy file. The taxonomy lists the 30 to 40 BAS accounts a small company actually uses, the VAT treatments that are valid for each, and typical purchase scenarios per account.
+A taxonomy file lists the 30 to 40 BAS accounts a small company actually uses, the VAT treatments that are valid for each, and typical purchase scenarios per account. Writing the texts and assembling the dataset are separate steps, and only the second is a command in the API.
+
+**Corrected 2026-09-20:** this section described one generator command calling a hosted model. In practice the writing is a fan-out: one small-model agent per account and VAT pair, each writing a batch in that label's voice, each batch then read by a second agent that rejects texts which do not fit the label. Two rounds were run. The batches are merged by hand after being read, and the API command assembles what survives.
 
 - **The label comes first, the text second.** For each account, VAT treatment and scenario, the hosted model is asked to write bank texts that would be booked that way. Asking a model to label random texts would import its mistakes as ground truth. Conditioning on the label makes wrong labels rare.
 - **Real format patterns are the style guide.** The prompt includes anonymised patterns from real bank files: upper case, truncation, card prefixes, city suffixes, reference codes. Without them a generator writes tidy descriptions that no bank ever produced.
@@ -123,7 +125,9 @@ A generator command in the API builds the dataset from a small taxonomy file. Th
 - **Near-duplicates are removed, and a slice is held out as synthetic validation data.** Validation data drives early stopping. Real data is never used for that, so the real test set stays clean.
 - **A sample of 50 is read by hand before any training.** Ten minutes of reading catches a systematic generator error that would otherwise cost a full training run to discover.
 
-The generator is TypeScript, not Python. It shares the text normalisation and the chat format with the rest of the API, so training and serving cannot drift apart.
+Assembly is TypeScript, not Python, and it owns every decision the dataset depends on: which texts survive, what amount each carries, and where the split falls. Amounts are derived from a hash of the text rather than written by a model, so the same inputs rebuild the same dataset and a diff means the texts changed.
+
+The batch reviewer is not a gate. It passed a batch of company transfers containing taxi fares and a salary run, which is why batches are still read by a person before training and why the assembler drops any text that was written for two different labels.
 
 ### From verifications to labels
 
@@ -149,7 +153,7 @@ For the LLM, confidence is the product of the probabilities of the account-numbe
 
 ### Training
 
-- **QLoRA on a 4-bit base model.** Only small adapter matrices are trained, which is what lets a 2B model train inside 8 GB with room to spare.
+- **LoRA adapters, with 4-bit quantisation available but not used.** Only the adapter matrices train, which is what keeps the run inside 8 GB. **Corrected 2026-09-20:** this said QLoRA on a 4-bit base model. `bitsandbytes` 0.50.2 was verified working against the cu130 torch build, so 4-bit is available behind `--load-4bit`, but a 1.5B model in bfloat16 fits without it and quantising a model that already fits only costs accuracy.
 - **Loss on the answer only.** The prompt tokens are masked out, so the model is graded on the account and VAT treatment, not on reproducing the transaction text.
 - **Few epochs, with early stopping on the synthetic validation slice.** With a few thousand short examples, overfitting arrives fast, and the validation curve is the only reliable signal.
 - **Real data in two parts, split by date.** Older months are the development set, looked at while tuning the generator and the training settings. The newest three months are the test set. Accuracy on synthetic validation data is reported beside the real figure, because the gap between them is the most informative number in the project.

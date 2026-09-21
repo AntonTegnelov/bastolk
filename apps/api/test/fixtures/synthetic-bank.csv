@@ -1,0 +1,9 @@
+sep=;
+Kontohavare;Kontonr;IBAN;BIC;Kontoform;Valuta;Kontoförande kontor;Datum intervall;Kontor;Bokföringsdag;Reskontradag;Valutadag;Referens;Insättning/Uttag;Bokfört saldo;Aktuellt saldo;Valutadagssaldo;Referens Swish;Avsändar-id Swish
+
+Exempelbolaget AB;1234 56 78901;;;;SEK;;;;2026-09-17;2026-09-17;2026-09-17;MOLNLEVERANTOR* T;-1 036,81;;;;;
+Exempelbolaget AB;1234 56 78901;;;;SEK;;;;2026-09-15;2026-09-15;2026-09-15;Bankavgifter;-162,00;;;;;
+Exempelbolaget AB;1234 56 78901;;;;SEK;;;;2026-09-11;2026-09-11;2026-09-11;INTERNET BET 1;-12250,00;;;;;
+Exempelbolaget AB;1234 56 78901;;;;SEK;;;;2026-09-02;2026-09-02;2026-09-02;EXEMPEL EMEA;-58,31;;;;;
+Exempelbolaget AB;1234 56 78901;;;;SEK;;;;2026-08-28;2026-08-28;2026-08-28;KUNDBETALNING;25000,00;;;;;
+Exempelbolaget AB;1234 56 78901;;;;SEK;;;;2026-08-25;2026-08-25;2026-08-25;LÖN;-16234,00;;;;;

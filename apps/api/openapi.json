@@ -1,0 +1,428 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Readiness of the database and the model server",
+        "tags": ["health"]
+      }
+    },
+    "/companies": {
+      "get": {
+        "operationId": "CompaniesController_list",
+        "parameters": [
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Every company in this installation",
+        "tags": ["companies"]
+      },
+      "post": {
+        "operationId": "CompaniesController_create",
+        "parameters": [
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCompanyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Register a company",
+        "tags": ["companies"]
+      }
+    },
+    "/sie/import": {
+      "post": {
+        "operationId": "SieController_import",
+        "parameters": [
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Import a SIE4 file of accounts and historical verifications",
+        "tags": ["sie"]
+      }
+    },
+    "/ledger/summary": {
+      "get": {
+        "operationId": "LedgerController_summary",
+        "parameters": [
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Counts and date range of the imported history",
+        "tags": ["ledger"]
+      }
+    },
+    "/ledger/accounts": {
+      "get": {
+        "operationId": "LedgerController_accounts",
+        "parameters": [
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "This company's chart of accounts",
+        "tags": ["ledger"]
+      }
+    },
+    "/ledger/verifications": {
+      "get": {
+        "operationId": "LedgerController_verifications",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 500,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Imported verifications, newest first",
+        "tags": ["ledger"]
+      }
+    },
+    "/bank/import": {
+      "post": {
+        "operationId": "BankController_import",
+        "parameters": [
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Import a bank CSV of transactions to be coded",
+        "tags": ["bank"]
+      }
+    },
+    "/bank/transactions": {
+      "get": {
+        "operationId": "BankController_transactions",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 1000,
+              "default": 200,
+              "type": "number"
+            }
+          },
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Imported bank transactions, newest first",
+        "tags": ["bank"]
+      }
+    },
+    "/suggestions/generate": {
+      "post": {
+        "operationId": "SuggestionsController_generate",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 500,
+              "default": 100,
+              "type": "number"
+            }
+          },
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Propose an entry for every transaction that has none",
+        "tags": ["suggestions"]
+      }
+    },
+    "/suggestions": {
+      "get": {
+        "operationId": "SuggestionsController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 500,
+              "default": 100,
+              "type": "number"
+            }
+          },
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Transactions with their current proposal and entry preview",
+        "tags": ["suggestions"]
+      }
+    },
+    "/suggestions/{transactionId}/decide": {
+      "post": {
+        "operationId": "SuggestionsController_decide",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-company-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The company every scoped request is resolved against"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Approve or correct a proposal, creating the journal entry",
+        "tags": ["suggestions"]
+      }
+    }
+  },
+  "info": {
+    "title": "Bastolk",
+    "description": "Bookkeeping suggestions for bank transactions, reviewed by a person",
+    "version": "0.1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "CreateCompanyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Exempelbolaget AB"
+          },
+          "orgNumber": {
+            "type": "string",
+            "example": "556677-8899",
+            "description": "Swedish organisation number"
+          }
+        },
+        "required": ["name", "orgNumber"]
+      },
+      "DecideDto": {
+        "type": "object",
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "example": "5420",
+            "description": "An account in this company's chart"
+          },
+          "vatTreatment": {
+            "type": "string",
+            "enum": [
+              "DOMESTIC_25",
+              "DOMESTIC_12",
+              "DOMESTIC_6",
+              "REVERSE_CHARGE_EU",
+              "REVERSE_CHARGE_NON_EU",
+              "NONE"
+            ]
+          }
+        },
+        "required": ["accountNumber", "vatTreatment"]
+      }
+    }
+  }
+}
