@@ -1,10 +1,12 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { Company } from '@prisma/client';
 import { PrismaService } from '../common/prisma.service.js';
+import { TrainingExamplesService } from '../predictors/training-examples.service.js';
 import { classifyAccount } from '../rules/bas.js';
-import { decodeSie } from './parser/decode.js';
+import { decodeSie, encodeSie } from './parser/decode.js';
 import { SieFormatError } from './parser/errors.js';
 import { parseSie } from './parser/parse-sie.js';
+import { serializeSie } from './parser/serialize-sie.js';
 
 export interface SieImportResult {
   importId: string;
@@ -12,13 +14,20 @@ export interface SieImportResult {
   accounts: number;
   verifications: number;
   lines: number;
+  /// Verifications that became nearest-neighbour examples. The rest had more
+  /// than one non-bank, non-VAT line and are not what a bank transaction looks
+  /// like.
+  examples: number;
 }
 
 @Injectable()
 export class SieService {
   private readonly logger = new Logger(SieService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trainingExamples: TrainingExamplesService,
+  ) {}
 
   /// Imported history is immutable, so every import creates its own rows. A
   /// re-import is a new import, never an update of the old one.
@@ -29,7 +38,7 @@ export class SieService {
   ): Promise<SieImportResult> {
     const parsed = this.parseOrReject(contents);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const created = await tx.sieImport.create({
         data: { companyId: company.id, filename },
       });
@@ -85,6 +94,80 @@ export class SieService {
         lines,
       };
     });
+
+    // Embedding runs outside the transaction: it is CPU work measured in
+    // seconds, and holding a database transaction open for it would block
+    // every other write for no benefit.
+    const examples = await this.trainingExamples.storeFromVerifications(
+      company.id,
+      parsed.verifications,
+    );
+
+    return { ...result, examples };
+  }
+
+  /// Export reads journal entries, which exist only because a person decided.
+  /// There is no code path from a suggestion to here.
+  async exportApproved(
+    company: Company,
+  ): Promise<{ filename: string; contents: Buffer }> {
+    const entries = await this.prisma.journalEntry.findMany({
+      where: { companyId: company.id },
+      orderBy: { date: 'asc' },
+      include: { lines: true },
+    });
+
+    if (entries.length === 0) {
+      throw new BadRequestException('Nothing has been approved for export yet');
+    }
+
+    const used = new Set(
+      entries.flatMap((entry) => entry.lines.map((line) => line.accountNumber)),
+    );
+    const accounts = await this.prisma.account.findMany({
+      where: { companyId: company.id, number: { in: [...used] } },
+      orderBy: { number: 'asc' },
+    });
+
+    const generatedOn = entries[entries.length - 1].date
+      .toISOString()
+      .slice(0, 10);
+    const contents = encodeSie(
+      serializeSie({
+        companyName: company.name,
+        orgNumber: company.orgNumber,
+        generatedOn,
+        accounts: accounts.map((account) => ({
+          number: account.number,
+          name: account.name,
+        })),
+        // Series B keeps exported entries apart from the imported history.
+        verifications: entries.map((entry, index) => ({
+          series: 'B',
+          number: String(index + 1),
+          date: entry.date.toISOString().slice(0, 10),
+          text: entry.text,
+          lines: entry.lines.map((line) => ({
+            accountNumber: line.accountNumber,
+            amountOre: line.amountOre,
+          })),
+        })),
+      }),
+    );
+
+    await this.prisma.journalEntry.updateMany({
+      where: { id: { in: entries.map((entry) => entry.id) } },
+      data: { exportedAt: new Date() },
+    });
+
+    this.logger.log(
+      `Exported ${entries.length} journal entries for ${company.name}`,
+    );
+
+    return {
+      filename: `bastolk-${company.orgNumber}-${generatedOn}.se`,
+      contents,
+    };
   }
 
   /// The file is input from outside, so a format failure is reported to the

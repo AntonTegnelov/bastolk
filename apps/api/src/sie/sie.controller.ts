@@ -1,11 +1,14 @@
 import {
+  BadRequestException,
   Controller,
+  Get,
   Post,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Company } from '@prisma/client';
@@ -42,5 +45,21 @@ export class SieController {
     }
 
     return this.sie.importFile(company, file.originalname, file.buffer);
+  }
+
+  @Get('export')
+  @ApiOperation({ summary: 'Download approved entries as a SIE4 file' })
+  async export(
+    @CurrentCompany() company: Company,
+    @Res() response: Response,
+  ): Promise<void> {
+    const { filename, contents } = await this.sie.exportApproved(company);
+
+    // Written as bytes, not as a string: the file is CP437 and any encoding
+    // applied on the way out would corrupt every Swedish name in it.
+    response
+      .header('content-type', 'application/octet-stream')
+      .header('content-disposition', `attachment; filename="${filename}"`)
+      .send(contents);
   }
 }

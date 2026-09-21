@@ -1,0 +1,262 @@
+:root {
+  --bg: #ffffff;
+  --fg: #16181d;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #1f6feb;
+  --high: #0f7b3f;
+  --medium: #92610a;
+  --low: #9a2c2c;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --fg: #e8eaed;
+    --muted: #9aa0a6;
+    --line: #2a2e35;
+    --accent: #6ea8fe;
+    --high: #4ade80;
+    --medium: #fbbf24;
+    --low: #f87171;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font:
+    15px/1.5 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+/* These need to outrank the filled default button below, or the active tab
+   renders as accent text on an accent background. */
+nav button:not(.link) {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 14px;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+nav button:not(.link).active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.card h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.muted {
+  color: var(--muted);
+  margin: 4px 0;
+}
+
+.mono {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 13px;
+}
+
+.right {
+  text-align: right;
+}
+
+.error {
+  color: var(--low);
+}
+
+.result {
+  color: var(--high);
+}
+
+table.rows {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.rows th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 6px;
+}
+
+table.rows td {
+  border-bottom: 1px solid var(--line);
+  padding: 6px;
+  vertical-align: middle;
+}
+
+tr.decided td {
+  opacity: 0.55;
+}
+
+tr.detail td {
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(200px, 320px) 1fr;
+  gap: 24px;
+  padding: 8px 4px;
+}
+
+.detail-grid h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+table.lines td {
+  padding: 2px 12px 2px 0;
+}
+
+.evidence {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  border: 1px solid currentColor;
+}
+
+.badge.high {
+  color: var(--high);
+}
+
+.badge.medium {
+  color: var(--medium);
+}
+
+.badge.low {
+  color: var(--low);
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+button:not(.link) {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+select,
+input[type='text'],
+input:not([type]) {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 8px 0 0;
+}
+
+.facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}

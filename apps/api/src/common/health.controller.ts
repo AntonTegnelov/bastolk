@@ -1,15 +1,19 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ModelStatus } from '@prisma/client';
 import { PrismaService } from './prisma.service.js';
 
 export interface HealthResponse {
   status: 'ok' | 'degraded';
   database: boolean;
-  /// False while training holds the GPU, or if Ollama is down. Suggestions
-  /// keep working from the nearest-neighbour model either way, so this is
-  /// reported rather than fatal.
+  /// True only when a model version is active and the server that holds it
+  /// answers. False while training holds the GPU, and false before any model
+  /// has been trained. Suggestions keep coming from the nearest-neighbour
+  /// model either way, so this is reported rather than fatal.
   llm: boolean;
+  modelServer: boolean;
+  activeModel: string | null;
 }
 
 @ApiTags('health')
@@ -23,10 +27,21 @@ export class HealthController {
   @Get()
   @ApiOperation({ summary: 'Readiness of the database and the model server' })
   async check(): Promise<HealthResponse> {
-    const database = await this.pingDatabase();
-    const llm = await this.pingOllama();
+    const [database, modelServer, active] = await Promise.all([
+      this.pingDatabase(),
+      this.pingOllama(),
+      this.prisma.modelVersion.findFirst({
+        where: { status: ModelStatus.ACTIVE },
+      }),
+    ]);
 
-    return { status: database ? 'ok' : 'degraded', database, llm };
+    return {
+      status: database ? 'ok' : 'degraded',
+      database,
+      llm: modelServer && active !== null,
+      modelServer,
+      activeModel: active?.name ?? null,
+    };
   }
 
   private async pingDatabase(): Promise<boolean> {

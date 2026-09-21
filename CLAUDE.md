@@ -26,12 +26,18 @@ Run from `/workspaces/bastolk` inside the dev container.
 pnpm install                          # workspace dependencies
 pnpm --filter api prisma migrate dev  # apply/author migrations
 pnpm --filter api test                # unit tests: no database, no GPU
-pnpm --filter api test:e2e            # needs postgres; runs migrations first
+pnpm --filter api test:e2e            # needs postgres, already migrated
+pnpm --filter api openapi             # regenerate openapi.json from the DTOs
+pnpm --filter web types:generate      # regenerate the frontend's API types
+pnpm --filter api dataset:build       # generated texts -> train/validation JSONL
+pnpm --filter api model:register <metrics.json> <name>
 pnpm lint && pnpm format:check        # must be clean before a task is done
 pnpm typecheck                        # must be clean before a task is done
 pnpm dev                              # API on :3000, web on :5173
 pip install -r ml/requirements.txt    # trainer deps into /home/dev/.venv
-python ml/train.py --dataset <path>   # holds the GPU; unload Ollama first
+python ml/train.py --dataset data/datasets/train.jsonl \
+  --validation data/datasets/validation.jsonl \
+  --output-dir /home/dev/models/<name>   # holds the GPU; unload Ollama first
 ```
 
 Before opening a PR: `pnpm verify` (lint, format, types, unit tests, e2e).

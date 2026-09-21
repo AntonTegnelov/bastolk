@@ -19,9 +19,13 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "dev": "nest start --watch",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "openapi": "nest build && node dist/openapi.js",
+    "dataset:build": "nest build && node dist/dataset.js",
+    "model:register": "nest build && node dist/register-model.js"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.3.0",
     "@nestjs/common": "^12.0.1",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^12.0.1",

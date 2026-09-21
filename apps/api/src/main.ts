@@ -1,8 +1,9 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import { LoggingInterceptor } from './common/logging.interceptor.js';
+import { swaggerConfig } from './swagger-config.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -21,17 +22,10 @@ async function bootstrap(): Promise<void> {
   );
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Bastolk')
-    .setDescription(
-      'Bookkeeping suggestions for bank transactions, reviewed by a person',
-    )
-    .setVersion('0.1')
-    .build();
   SwaggerModule.setup(
     'api',
     app,
-    SwaggerModule.createDocument(app, swaggerConfig),
+    SwaggerModule.createDocument(app, swaggerConfig()),
   );
 
   // The Vite dev server is a separate origin during development.

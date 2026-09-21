@@ -14,6 +14,11 @@
 *.si binary
 *.sie binary
 
+# Bank exports are CP1252 with CRLF. Normalising either would leave the
+# fixture no longer representing what a bank actually produces, which is the
+# only thing it is for.
+apps/api/test/fixtures/*.csv binary
+
 # Model weights and lockfiles: don't diff them.
 *.gguf binary
 pnpm-lock.yaml -diff linguist-generated
