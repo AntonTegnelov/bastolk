@@ -1,0 +1,293 @@
+// The schema separates three kinds of fact that are easy to blur: what was
+// booked in the past, what the tool proposed, and what a person decided.
+// Keeping them apart is what makes evaluation and retraining honest.
+//
+// Money is integer ore everywhere. Every table holding company data carries a
+// company id; the tenancy guard supplies it and services never take it from a
+// request body.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// pgvector is provided by the pgvector/pgvector image and created explicitly
+// in the first migration. Prisma does not manage it: the vector column is
+// Unsupported() and written with raw SQL either way.
+datasource db {
+  provider = "postgresql"
+}
+
+enum AccountRole {
+  BANK
+  VAT
+  OTHER
+
+  @@map("account_role")
+}
+
+enum VatTreatment {
+  DOMESTIC_25
+  DOMESTIC_12
+  DOMESTIC_6
+  REVERSE_CHARGE_EU
+  REVERSE_CHARGE_NON_EU
+  NONE
+
+  @@map("vat_treatment")
+}
+
+enum ExampleSource {
+  HISTORY
+  CORRECTION
+
+  @@map("example_source")
+}
+
+enum ModelStatus {
+  TRAINING
+  READY
+  ACTIVE
+  REJECTED
+  FAILED
+
+  @@map("model_status")
+}
+
+enum RunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+
+  @@map("run_status")
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  orgNumber String   @unique @map("org_number")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  accounts         Account[]
+  imports          SieImport[]
+  verifications    Verification[]
+  bankTransactions BankTransaction[]
+  trainingExamples TrainingExample[]
+  suggestions      Suggestion[]
+  decisions        Decision[]
+  journalEntries   JournalEntry[]
+
+  @@map("company")
+}
+
+/// The chart of accounts. A predicted account that is not here is a
+/// hallucination and is rejected before it can become a suggestion.
+model Account {
+  id        String      @id @default(uuid())
+  companyId String      @map("company_id")
+  number    String
+  name      String
+  /// Seeded from the standard BAS ranges at import. Label extraction needs to
+  /// know which lines are the bank side and which are VAT.
+  role      AccountRole @default(OTHER)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("account")
+}
+
+/// One SIE4 file import. Imported history is immutable, so a re-import creates
+/// a new import with new rows rather than updating the old ones.
+model SieImport {
+  id         String   @id @default(uuid())
+  companyId  String   @map("company_id")
+  filename   String
+  importedAt DateTime @default(now()) @map("imported_at")
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  verifications Verification[]
+
+  @@index([companyId])
+  @@map("sie_import")
+}
+
+model Verification {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  importId  String   @map("import_id")
+  series    String
+  number    String
+  date      DateTime @db.Date
+  text      String
+
+  company Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  import  SieImport          @relation(fields: [importId], references: [id], onDelete: Cascade)
+  lines   VerificationLine[]
+
+  @@unique([importId, series, number])
+  @@index([companyId, date])
+  @@map("verification")
+}
+
+model VerificationLine {
+  id             String  @id @default(uuid())
+  verificationId String  @map("verification_id")
+  accountNumber  String  @map("account_number")
+  amountOre      Int     @map("amount_ore")
+  text           String?
+
+  verification Verification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  @@index([verificationId])
+  @@map("verification_line")
+}
+
+/// Rows from an uploaded bank file: the items to be coded. The hash of date,
+/// amount and text stops the same row being imported twice.
+model BankTransaction {
+  id         String   @id @default(uuid())
+  companyId  String   @map("company_id")
+  bookedOn   DateTime @map("booked_on") @db.Date
+  text       String
+  amountOre  Int      @map("amount_ore")
+  hash       String
+  importedAt DateTime @default(now()) @map("imported_at")
+
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  suggestions Suggestion[]
+  decision    Decision?
+
+  @@unique([companyId, hash])
+  @@index([companyId, bookedOn])
+  @@map("bank_transaction")
+}
+
+/// What the nearest-neighbour model searches. Synthetic examples are files on
+/// disk, not rows, because they belong to no company.
+model TrainingExample {
+  id            String        @id @default(uuid())
+  companyId     String        @map("company_id")
+  text          String
+  amountOre     Int           @map("amount_ore")
+  accountNumber String        @map("account_number")
+  vatTreatment  VatTreatment  @map("vat_treatment")
+  source        ExampleSource
+  occurredOn    DateTime      @map("occurred_on") @db.Date
+  /// Written with raw SQL: Prisma has no vector type. A correction becomes
+  /// searchable the moment its row is inserted, so there is no training step.
+  embedding     Unsupported("vector(384)")?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, occurredOn])
+  @@map("training_example")
+}
+
+/// What the tool proposed. Kept even after a correction, because comparing
+/// proposals with decisions is how real-world accuracy is measured over time.
+model Suggestion {
+  id                String   @id @default(uuid())
+  companyId         String   @map("company_id")
+  bankTransactionId String   @map("bank_transaction_id")
+  /// Ranked candidates, each with account, VAT treatment and confidence.
+  candidates        Json
+  predictor         String
+  modelVersionId    String?  @map("model_version_id")
+  confidence        Float
+  evidence          Json
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankTransaction BankTransaction @relation(fields: [bankTransactionId], references: [id], onDelete: Cascade)
+  modelVersion    ModelVersion?   @relation(fields: [modelVersionId], references: [id])
+  decisions       Decision[]
+
+  @@index([companyId, bankTransactionId])
+  @@map("suggestion")
+}
+
+/// What the person approved. The audit trail, and the source of new training
+/// examples. Nothing reaches an export without one of these.
+model Decision {
+  id                     String       @id @default(uuid())
+  companyId              String       @map("company_id")
+  bankTransactionId      String       @unique @map("bank_transaction_id")
+  suggestionId           String?      @map("suggestion_id")
+  accountNumber          String       @map("account_number")
+  vatTreatment           VatTreatment @map("vat_treatment")
+  differedFromSuggestion Boolean      @map("differed_from_suggestion")
+  decidedAt              DateTime     @default(now()) @map("decided_at")
+
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankTransaction BankTransaction @relation(fields: [bankTransactionId], references: [id], onDelete: Cascade)
+  suggestion      Suggestion?     @relation(fields: [suggestionId], references: [id])
+  journalEntry    JournalEntry?
+
+  @@index([companyId, decidedAt])
+  @@map("decision")
+}
+
+/// The balanced entry the rules module built from a decision. Derived data,
+/// stored so an export always matches what was shown on screen.
+model JournalEntry {
+  id         String    @id @default(uuid())
+  companyId  String    @map("company_id")
+  decisionId String    @unique @map("decision_id")
+  date       DateTime  @db.Date
+  text       String
+  exportedAt DateTime? @map("exported_at")
+
+  company  Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  decision Decision      @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  lines    JournalLine[]
+
+  @@index([companyId, date])
+  @@map("journal_entry")
+}
+
+model JournalLine {
+  id             String @id @default(uuid())
+  journalEntryId String @map("journal_entry_id")
+  accountNumber  String @map("account_number")
+  amountOre      Int    @map("amount_ore")
+
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+  @@map("journal_line")
+}
+
+/// The registry the promotion gate reads and writes. Exactly one version is
+/// ACTIVE, because the fine-tuned model is shared between companies.
+model ModelVersion {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  baseModel   String      @map("base_model")
+  datasetSize Int         @map("dataset_size")
+  status      ModelStatus
+  filePath    String?     @map("file_path")
+  /// The held-out metrics this version was promoted on. A metric from a
+  /// different dataset version or split is not comparable and must not go here.
+  metrics     Json?
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  suggestions  Suggestion[]
+  trainingRuns TrainingRun[]
+
+  @@map("model_version")
+}
+
+model TrainingRun {
+  id             String    @id @default(uuid())
+  status         RunStatus
+  startedAt      DateTime  @default(now()) @map("started_at")
+  finishedAt     DateTime? @map("finished_at")
+  logTail        String?   @map("log_tail")
+  modelVersionId String?   @map("model_version_id")
+
+  modelVersion ModelVersion? @relation(fields: [modelVersionId], references: [id])
+
+  @@map("training_run")
+}
